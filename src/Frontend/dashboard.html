@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Financial Engine – Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="dashboard.css" />
+</head>
+
+
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="hamburger" id="nav-toggle" aria-label="Toggle navigation">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+
+        <div class="brand">
+          <div class="brand-logo"></div>
+          <div>
+            <div class="brand-text-title">Financial Engine</div>
+            <div class="brand-text-sub">Automated cash‑flow &amp; risk insights</div>
+          </div>
+        </div>
+      </div>
+      <div class="user-pill">
+        <div class="user-avatar"></div>
+        <div class="user-name">Your Profile</div>
+      </div>
+    </header>
+
+    <main class="main-single">
+      <section class="card">
+        <div class="card-inner">
+          <div class="pill-badge">
+            <span class="pill-dot"></span>
+            Live bank connection
+          </div>
+          <h2 class="card-title">Connect your first bank</h2>
+          <p class="card-sub">
+            Link a checking or credit account with Plaid to unlock live balances,
+            transaction analytics, and anomaly alerts.
+          </p>
+
+          <button class="cta-btn" id="connect-bank-btn">
+            <span class="cta-icon">+</span>
+            <span>Connect bank account</span>
+          </button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const connectBtn = document.getElementById("connect-bank-btn");
+    if (connectBtn) {
+      connectBtn.addEventListener("click", function () {
+        alert("TODO: open Plaid Link using /create_link_token.");
+      });
+    }
+  </script>
+</body>
+</html>
+

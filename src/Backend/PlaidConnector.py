@@ -77,16 +77,16 @@ class PlaidConnector:  # credentials + verification to Plaid on every request
                 )
                 response = self.client.transactions_sync(request)
                 if hasattr(response, 'added') and response.added:
-                    all_tx.extend(response.added)  # Sync API: new transactions
+                    all_tx.extend(response.added)                #//Sync API: new transactions
                 if hasattr(response, 'modified') and response.modified:
-                    all_tx.extend(response.modified)  # updated versions (removed not included)
+                    all_tx.extend(response.modified)             # updated versions (removed not included)
                 has_more = getattr(response, 'has_more', False)
                 if not has_more:
                     break
                 current_cursor = getattr(response, 'next_cursor', None) or getattr(response, 'cursor', None)
                 if not current_cursor:
                     break
-            if start_date or end_date:  # filter by date after fetch (Sync API has no date range)
+            if start_date or end_date:                          # filter by date after fetch (Sync API has no date range)
                 if isinstance(start_date, str):
                     start_date = date.fromisoformat(start_date)
                 if isinstance(end_date, str):
@@ -94,7 +94,7 @@ class PlaidConnector:  # credentials + verification to Plaid on every request
                 if not end_date:
                     end_date = date.today()
                 if not start_date:
-                    start_date = end_date - timedelta(days=30)
+                    start_date = end_date - timedelta(days=365) #plaid backtracks data from 1 year ago
                 filtered_tx = []
                 for tx in all_tx:
                     tx_date = getattr(tx, 'date', None) or getattr(tx, 'authorized_date', None)
