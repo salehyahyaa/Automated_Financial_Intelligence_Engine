@@ -114,7 +114,7 @@ def syncTransactions(body: dict = None):
 
 
 def _clean_plaid_transactions(raw):
-    """Takes raw transcational data from getTransactions() thats formatted in Plaids format whitch we turn into our desired dict data format to feed it into the sync-transactions
+    """raw transcational data from getTransactions() formatted in Plaids format whitch we turn into our desired dict data format to feed it into the sync-transactions
        tx = transaction(s), cat = category"""
     normalized = []
     for tx in raw:
@@ -149,6 +149,9 @@ def _clean_plaid_transactions(raw):
             "iso_currency_code": getattr(tx, "iso_currency_code", None) or getattr(tx, "unofficial_currency_code", None) or "USD",
         })
     return normalized
+
+
+    #refresh balance endpoint
 
 #------------------------------------NOTES----------------------------------------------------------------------------------------#
 """
