@@ -18,7 +18,61 @@ class StatisticalAnalytics:
     MONTH_OVER_MONTH_CHANGE = "month_over_month_change"    #for enum category
 
     @staticmethod
-    def net_cash_flow():
+    def net_cash_flow(transactions, month, months):
+        month = None
+        months = None
+        if not transactions: 
+            return 0.0 
+        if month:
+            transactions = ...
+
+
+
+    @staticmethod
+    def income_summary():
+        ...
+    
+    
+    @staticmethod
+    def expense_summary():
+        ...
+
+
+    @staticmethod
+    def monthly_spend():
+        ...
+
+
+    @staticmethod
+    def savings_rate():
+        ...
+
+
+    @staticmethod
+    def income_expense_ratio():
+        ...
+
+
+    @staticmethod
+    def category_breakdown():
+        ...
+
+
+    @staticmethod
+    def cash_flow_series():
+        ...
+
+    @staticmethod
+    def volatility():
+        ...
+
+
+    @staticmethod
+    def anomaly_detection():
+        ...
+
+    @staticmethod
+    def month_over_month_change():
         ...
 
 #------------------------------------NOTES----------------------------------------------------------------------------------------#
@@ -31,46 +85,24 @@ and used purely as a calulator to perform its forumla's to obtian an answer
 
 
 """
-Net Cash Flow = sum(amount)
-
-2. Income
-Income = sum(amount where amount > 0)
-
-3. Expenses
-Expenses = sum(amount where amount < 0)
-
-4. Monthly Spend
-Monthly Spend = sum(amount) grouped by month
+                                       STATISTICAL ANALYTICS FORUMLS
+============================================================================================================================
+-Net Cash Flow = sum(amount)
+-Income = sum(amount where amount > 0)
+-Expenses = sum(amount where amount < 0)
+-Monthly Spend = sum(amount) grouped by month
 start_date = end_date
 
-5. Burn Rate (Daily)
-Burn Rate = abs(total expenses over last 30 days) / 30
-
-6. Savings Rate
-Savings Rate = (Income - abs(Expenses)) / Income
-
-7. Income vs Expense Ratio
-Ratio = Income / abs(Expenses)
-
-8. Category Totals
-Category Total = sum(amount grouped by category)
-
-9. Category Share (%)
-Category Share = Category Total / Total Spending
-
-10. Rolling Average (7-Day Example)
-RollingAvg_7d(t) = (sum of amounts from t-6 through t) / 7
-
-11. Running Total (Cumulative Flow)
-Cumulative(t) = sum of all transaction amounts from start through time t
-
-12. Volatility (Standard Deviation)
-Volatility = sqrt( average( (x - mean)^2 ) )
-
-13. Z-Score (Anomaly Detection)
-Z = (x - mean) / standard_deviation
+-Burn Rate = abs(total expenses over last 30 days) / 30
+-Savings Rate = (Income - abs(Expenses)) / Income
+-Ratio = Income / abs(Expenses)
+-Category Total = sum(amount grouped by category)
+-Category Share = Category Total / Total Spending
+-RollingAvg_7d(t) = (sum of amounts from t-6 through t) / 7
+-Cumulative(t) = sum of all transaction amounts from start through time t
+-Volatility = sqrt( average( (x - mean)^2 ) )
+-Z = (x - mean) / standard_deviation        //Anomaly Detection
 Flag anomaly if abs(Z) > 2
 
-14. Month-Over-Month Change
-MoM = (ThisMonth - LastMonth) / LastMonth
+-Month Over Month Change = (ThisMonth - LastMonth) / LastMonth
 """
