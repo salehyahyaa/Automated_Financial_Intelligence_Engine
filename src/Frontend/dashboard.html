@@ -11,6 +11,26 @@
 
 
 <body>
+  <!-- Sliding nav drawer (opens from left) -->
+  <div class="nav-drawer" id="nav-drawer" aria-hidden="true">
+    <div class="nav-drawer-overlay" id="nav-drawer-overlay" aria-label="Close menu"></div>
+    <aside class="nav-drawer-panel" role="navigation" aria-label="Main navigation">
+      <div class="nav-drawer-header">
+        <span class="nav-drawer-title">Menu</span>
+        <button type="button" class="nav-drawer-close" id="nav-drawer-close" aria-label="Close menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 6L6 18"/><path d="M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <ul class="nav-drawer-list">
+        <li><a href="#" class="nav-drawer-link nav-drawer-link--active">Dashboard</a></li>
+        <li><a href="#" class="nav-drawer-link" data-action="connected-accounts">Connected accounts</a></li>
+        <li><a href="#" class="nav-drawer-link" data-action="settings">Settings</a></li>
+      </ul>
+    </aside>
+  </div>
+
   <div class="shell">
     <header class="topbar">
       <div class="topbar-left">
@@ -87,6 +107,7 @@
   <script src="plaid.js"></script>
   <script src="chatbox.js"></script>
   <script src="refresh.js"></script>
+  <script src="nav-drawer.js"></script>
 </body>
 </html>
 
