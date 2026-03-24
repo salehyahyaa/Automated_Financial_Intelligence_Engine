@@ -20,7 +20,7 @@
 
 ## Setup
 ```bash
-git clone https://github.com/your-username/Automated-Financial-Intelligence-Engine.git
-cd Automated-Financial-Analytics-Engine
+git clone https://github.com/your-username/Automated_Financial_Intelligence_Engine.git
+cd Automated_Financial_Intelligence_Engine
 pip install -r requirements.txt
 uvicorn main:app --reload
