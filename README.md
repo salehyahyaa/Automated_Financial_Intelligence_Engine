@@ -1,8 +1,8 @@
-# Automated Financial Analytics Engine
--A backend engine that securely ingests financial data from multiple institutions using Python and PostgreSQL, centralizing all personal financial activity into a unified system. The platform applies statistical analysis and predictive modeling to generate portfolio insights, and integrates LLMs (Gemini) to enable naturallanguage financial queries and personalized, datadriven intelligence on individual finances.
+# Automated Financial Intelligence Engine
+-A backend engine that securely ingests financial data from multiple institutions via plaid, centralizing all personal financial activity into a unified system. The platform applies statistical analysis and predictive modeling to generate portfolio insights, and integrates LLMs (Gemini) to enable naturallanguage financial queries and personalized, datadriven intelligence on individual finances.
 
 
-## Tech Stack
+## Architecture
 - Python
 - PostgreSQL
 - Plaid 
