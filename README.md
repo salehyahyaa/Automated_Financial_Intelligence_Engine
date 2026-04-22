@@ -39,7 +39,8 @@ Automated_Financial_Intelligence_Engine/
 │  │  │  ├─ StatisticalAnalytics.py
 │  │  │  └─ __init__.py
 │  │  ├─ LLM/
-│  │  │  ├─ ChangeLater.py
+│  │  │  ├─ client.py
+│  │  │  ├─ prompts.py
 │  │  │  └─ __init__.py
 │  │  ├─ database/
 │  │  │  ├─ Connection.py
