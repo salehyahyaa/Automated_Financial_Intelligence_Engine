@@ -9,6 +9,8 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence
 #TYPE ALIASING
 Transaction = Dict[str, any] # TYPE ALIASING: as dicts key==str, value==anything
 
+logger = logging.getLogger(__name__)
+#now we start v
 
 
 
