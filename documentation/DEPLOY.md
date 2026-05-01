@@ -1,5 +1,7 @@
 # Running in production
 
+Route-by-route behavior is summarized in **[API_ENDPOINTS.md](API_ENDPOINTS.md)**.
+
 ## Ports
 
 - **`PORT`** (default **8001** in `main.py` / `gunicorn_start.sh`): API listen port. Set to what Nginx proxies to (e.g. `8080` internally).
