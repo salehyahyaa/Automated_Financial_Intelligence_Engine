@@ -6,23 +6,80 @@ from plaid.api import plaid_api
 from plaid.model.link_token_create_request import LinkTokenCreateRequest
 from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUser
 from plaid.model.item_public_token_exchange_request import ItemPublicTokenExchangeRequest
+from plaid.model.item_remove_request import ItemRemoveRequest
 from plaid import ApiClient, Configuration
 from plaid.model.accounts_balance_get_request import AccountsBalanceGetRequest
 from plaid.model.products import Products
 from plaid import Environment
 from plaid.model.transactions_sync_request import TransactionsSyncRequest  # Plaid SDK for transactions sync API
+from plaid.model.item_get_request import ItemGetRequest
+from plaid.model.institutions_get_by_id_request import InstitutionsGetByIdRequest
 from datetime import date, timedelta
-#Purpose of this file is to hold our credientals and automate our verification to plaid everytime we send a req
+
+# Purpose of this file is to hold our credentials and automate verification to Plaid on every request.
+
+_log = logging.getLogger(__name__)
+
+
+def _parse_link_products():
+    # PLAID_PRODUCTS=comma list (e.g. transactions,auth). Invalid tokens are skipped; default transactions.
+    raw = os.getenv("PLAID_PRODUCTS", "transactions")
+    out = []
+    for part in raw.split(","):
+        p = part.strip().lower()
+        if not p:
+            continue
+        try:
+            out.append(Products(p))
+        except Exception:
+            _log.warning("Skipping unknown Plaid product name: %s", p)
+    return out if out else [Products("transactions")]
+
+
+def _link_token_products():
+    # Plaid rejects "balance" in link_token_create products — it is implied when other products are set.
+    prods = _parse_link_products()
+    filtered = [p for p in prods if getattr(p, "value", str(p)).lower() != "balance"]
+    if not filtered:
+        return [Products("transactions")]
+    return filtered
+
+
+def _parse_country_codes():
+    # PLAID_COUNTRY_CODES=comma list of ISO country codes (e.g. US,CA). Default US.
+    raw = os.getenv("PLAID_COUNTRY_CODES", "US")
+    out = []
+    for part in raw.split(","):
+        p = part.strip().upper()
+        if not p:
+            continue
+        try:
+            out.append(CountryCode(p))
+        except Exception:
+            _log.warning("Skipping unknown Plaid country code: %s", p)
+    return out if out else [CountryCode("US")]
+
+
+def _resolve_plaid_environment(env_name):
+    # Map PLAID_ENV string to plaid.Environment host (sandbox vs production).
+    key = (env_name or os.getenv("PLAID_ENV") or "sandbox").strip().lower()
+    if key in ("production", "prod"):
+        return Environment.Production
+    if key in ("development", "dev"):
+        return Environment.Development
+    return Environment.Sandbox
 
 
 class PlaidConnector:  # credentials + verification to Plaid on every request
     
     def __init__(self, client_id, secret, environment):
         self.logger = logging.getLogger(__name__)
-        self.client_id = os.getenv("PLAID_CLIENT_ID")
-        self.secret = os.getenv("PLAID_SECRET")
+        self.client_id = client_id or os.getenv("PLAID_CLIENT_ID")
+        self.secret = secret or os.getenv("PLAID_SECRET")
+        self.environment = environment or os.getenv("PLAID_ENV")
+        host = _resolve_plaid_environment(self.environment)
         self.config = Configuration(
-            host=Environment.Production,
+            host=host,
             api_key={
                 "clientId": self.client_id,
                 "secret": self.secret,
@@ -32,12 +89,14 @@ class PlaidConnector:  # credentials + verification to Plaid on every request
         self.client = plaid_api.PlaidApi(api_client)
 
 
-    def create_link_token(self):                                                             #PlaidDoc's made the method called create_link_token, we just call it here to use it
+    def create_link_token(self, client_user_id=None):
+        """client_user_id should be the app user id (e.g. Supabase sub) when auth is enabled."""
+        link_uid = (client_user_id or os.getenv("PLAID_LINK_USER_ID") or "USER").strip() or "USER"
         request = LinkTokenCreateRequest(
-            user = LinkTokenCreateRequestUser(client_user_id="USER"), 
+            user=LinkTokenCreateRequestUser(client_user_id=link_uid),
             client_name = "Automated Financial Analytics Engine",
-            products = [Products("transactions")],  # which Plaid products; add Products("auth") later if needed
-            country_codes = [CountryCode("US")],
+            products=_link_token_products(),
+            country_codes=_parse_country_codes(),
             language="en",
         )
         response = self.client.link_token_create(request)
@@ -61,17 +120,51 @@ class PlaidConnector:  # credentials + verification to Plaid on every request
             return response.accounts  # real-time balance for each account
         except Exception as e:
             self.logger.error("Error getting accounts", exc_info=True)
-            raise 
- 
- 
+            raise
+
+    def fetch_institution_display_name(self, access_token):
+        """Resolve human-readable institution name from Plaid (item + institutions/get_by_id)."""
+        try:
+            item_resp = self.client.item_get(ItemGetRequest(access_token=access_token))
+            item = getattr(item_resp, "item", None)
+            if not item:
+                return None
+            inst_id = getattr(item, "institution_id", None)
+            if not inst_id:
+                return None
+            inst_resp = self.client.institutions_get_by_id(
+                InstitutionsGetByIdRequest(
+                    institution_id=str(inst_id),
+                    country_codes=_parse_country_codes(),
+                )
+            )
+            inst = getattr(inst_resp, "institution", None)
+            if not inst:
+                return None
+            nm = getattr(inst, "name", None)
+            if nm:
+                return str(nm).strip() or None
+        except Exception as e:
+            self.logger.warning("Could not resolve institution display name from Plaid: %s", e)
+        return None
+
+    def remove_item(self, access_token):
+        """Tell Plaid to invalidate the Item / access_token (call before deleting local plaid_items row)."""
+        try:
+            request = ItemRemoveRequest(access_token=access_token)
+            self.client.item_remove(request)
+        except Exception as e:
+            self.logger.error("Error removing Plaid item", exc_info=True)
+            raise
+
     def getTransactions(self, access_token, start_date=None, end_date=None, cursor=None):
-        """Fetch transactions via access_token, 
-           returning transactions for * accounts under that Item object. Paginates * transcations to accountID to link the transactions-accounts
-        """
+        # Paginate /transactions/sync until has_more is false; return (tx list, next_cursor, removed plaid ids).
         try:
             all_tx = []
-            current_cursor = cursor or ""  # empty cursor = initial full sync
-            
+            removed_ids = []
+            current_cursor = cursor if cursor is not None else ""
+            last_next_cursor = ""
+
             while True:
                 request = TransactionsSyncRequest(
                     access_token=access_token,
@@ -82,6 +175,12 @@ class PlaidConnector:  # credentials + verification to Plaid on every request
                     all_tx.extend(response.added)                #//Sync API: new transactions
                 if hasattr(response, 'modified') and response.modified:
                     all_tx.extend(response.modified)             # updated versions (removed not included)
+                if hasattr(response, "removed") and response.removed:
+                    for r in response.removed:
+                        tid = getattr(r, "transaction_id", None)
+                        if tid:
+                            removed_ids.append(str(tid))
+                last_next_cursor = getattr(response, "next_cursor", None) or last_next_cursor
                 has_more = getattr(response, 'has_more', False)
                 if not has_more:
                     break
@@ -109,8 +208,8 @@ class PlaidConnector:  # credentials + verification to Plaid on every request
                             continue
                         if start_date <= tx_date <= end_date:
                             filtered_tx.append(tx)
-                return filtered_tx    
-            return all_tx
+                return filtered_tx, last_next_cursor, removed_ids
+            return all_tx, last_next_cursor, removed_ids
         except Exception as e:
             self.logger.error("Error getting transactions", exc_info=True)
             raise

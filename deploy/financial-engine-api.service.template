@@ -1,0 +1,18 @@
+[Unit]
+Description=Financial Engine API (FastAPI + uvicorn)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=@SERVICE_USER@
+Group=@SERVICE_USER@
+WorkingDirectory=@INSTALL_ROOT@/src/Backend
+EnvironmentFile=-@INSTALL_ROOT@/.env
+# Bind publicly; override with HOST/PORT in .env only if you also change ExecStart.
+ExecStart=@INSTALL_ROOT@/.venv/bin/uvicorn main:app --host 0.0.0.0 --port 8001
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

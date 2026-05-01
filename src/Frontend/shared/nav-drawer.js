@@ -46,4 +46,38 @@
       if (typeof window.openPlaidLink === "function") window.openPlaidLink();
     });
   }
+
+  function setNavActive(action) {
+    drawer.querySelectorAll(".nav-drawer-link[data-action]").forEach(function (a) {
+      a.classList.toggle("nav-drawer-link--active", a.getAttribute("data-action") === action);
+    });
+  }
+
+  drawer.querySelectorAll(".nav-drawer-link[data-action]").forEach(function (link) {
+    link.addEventListener("click", function (e) {
+      var action = link.getAttribute("data-action");
+      if (!action) return;
+      e.preventDefault();
+      closeDrawer();
+
+      if (action === "dashboard") {
+        if (typeof window.navigateAppView === "function") window.navigateAppView("dashboard");
+        else setNavActive("dashboard");
+        return;
+      }
+      if (action === "settings") {
+        if (typeof window.navigateAppView === "function") window.navigateAppView("settings");
+        else setNavActive("settings");
+        return;
+      }
+      if (action === "connected-accounts") {
+        if (typeof window.navigateAppView === "function") {
+          window.navigateAppView("connected-accounts");
+        } else {
+          setNavActive("connected-accounts");
+        }
+        return;
+      }
+    });
+  });
 })();

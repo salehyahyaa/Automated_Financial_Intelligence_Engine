@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Financial Engine – Dashboard</title>
+  <meta name="api-base" content="http://127.0.0.1:8001" />
+  <!-- Supabase URL + anon: leave empty and set SUPABASE_URL + SUPABASE_ANON_KEY in API .env (GET /config/supabase-public). Or fill metas instead. JWT: SUPABASE_JWT_SECRET in .env. -->
+  <meta name="supabase-url" content="" />
+  <meta name="supabase-anon-key" content="" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="dashboard.css" />
+  <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
+</head>
+
+
+<body>
+  <!-- Full-screen auth when API requires Bearer and there is no session (hidden until JS decides). -->
+  <div id="auth-gate" class="auth-gate auth-gate--hidden" aria-modal="true" role="dialog" aria-labelledby="auth-gate-title">
+    <div class="auth-gate-card">
+      <h1 id="auth-gate-title" class="auth-gate-title">Financial Engine</h1>
+      <p class="auth-gate-sub">Sign in or create an account to use your dashboard and assistant.</p>
+      <div class="auth-gate-tabs" role="tablist">
+        <button type="button" id="auth-tab-signin" class="auth-gate-tab auth-gate-tab--active" role="tab" aria-selected="true">Sign in</button>
+        <button type="button" id="auth-tab-signup" class="auth-gate-tab" role="tab" aria-selected="false">Sign up</button>
+      </div>
+      <p id="auth-gate-message" class="auth-gate-message" role="status"></p>
+      <form id="auth-gate-signin-form" class="auth-gate-form" novalidate autocomplete="on">
+        <label class="auth-gate-label" for="auth-gate-email-in">Email</label>
+        <input id="auth-gate-email-in" class="auth-gate-input" type="email" name="email" placeholder="you@example.com" autocomplete="username" />
+        <label class="auth-gate-label" for="auth-gate-password-in">Password</label>
+        <input id="auth-gate-password-in" class="auth-gate-input" type="password" name="password" placeholder="Password" autocomplete="current-password" />
+        <button type="submit" class="auth-gate-submit">Sign in</button>
+        <button type="button" id="auth-resend-confirmation" class="auth-gate-text-btn">
+          Resend confirmation email
+        </button>
+      </form>
+      <form id="auth-gate-signup-form" class="auth-gate-form auth-gate-form--hidden" novalidate autocomplete="on">
+        <label class="auth-gate-label" for="auth-gate-email-up">Email</label>
+        <input id="auth-gate-email-up" class="auth-gate-input" type="email" name="email" placeholder="you@example.com" autocomplete="email" />
+        <label class="auth-gate-label" for="auth-gate-password-up">Password</label>
+        <input id="auth-gate-password-up" class="auth-gate-input" type="password" name="password" placeholder="Choose a password (min 6 chars)" autocomplete="new-password" />
+        <button type="submit" class="auth-gate-submit auth-gate-submit--secondary">Create account</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Sliding nav drawer (opens from left) -->
+  <div class="nav-drawer" id="nav-drawer" aria-hidden="true">
+    <div class="nav-drawer-overlay" id="nav-drawer-overlay" aria-label="Close menu"></div>
+    <aside class="nav-drawer-panel" role="navigation" aria-label="Main navigation">
+      <div class="nav-drawer-header">
+        <span class="nav-drawer-title">Menu</span>
+        <button type="button" class="nav-drawer-close" id="nav-drawer-close" aria-label="Close menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 6L6 18"/><path d="M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <ul class="nav-drawer-list">
+        <li><a href="#" class="nav-drawer-link nav-drawer-link--active" data-action="dashboard">Dashboard</a></li>
+        <li><a href="#" class="nav-drawer-link" data-action="connected-accounts">Connected accounts</a></li>
+        <li><a href="#" class="nav-drawer-link" data-action="settings">Settings</a></li>
+      </ul>
+    </aside>
+  </div>
+
+  <div class="shell">
+    <div class="shell-layout">
+      <div class="shell-primary">
+        <header class="topbar">
+          <div class="topbar-left">
+            <div class="topbar-nav-stack">
+              <button class="hamburger" id="nav-toggle" aria-label="Toggle navigation">
+                <span></span>
+                <span></span>
+                <span></span>
+              </button>
+              <button type="button" class="refresh-btn" id="refresh-btn" aria-label="Refresh">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 12a9 9 0 11-9-9 9 0 019 9"/>
+                  <path d="M21 3v6h-6"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <div class="shell-view-stack">
+      <section class="dashboard-main" id="dashboard-main" aria-label="Financial overview">
+        <div class="dashboard-surface">
+          <div class="dash-loading" id="dash-loading">Loading your snapshot…</div>
+          <div class="dash-content dash-content--hidden" id="dash-content">
+            <div class="dash-hero">
+              <h1 class="dash-title">Overview</h1>
+              <p class="dash-subtitle" id="dash-subtitle">Linked accounts and recent activity</p>
+              <div id="dash-connection-strip" class="dash-connection-strip" aria-live="polite"></div>
+            </div>
+            <div class="dash-stats" id="dash-stats"></div>
+            <div class="dash-grid">
+              <article class="dash-card dash-card--wide">
+                <h2 class="dash-card-title">Accounts</h2>
+                <div class="dash-table-wrap" id="dash-accounts-wrap"></div>
+              </article>
+              <article class="dash-card dash-card--wide">
+                <h2 class="dash-card-title">Recent transactions</h2>
+                <div class="dash-table-wrap" id="dash-tx-wrap"></div>
+              </article>
+            </div>
+            <p class="dash-hint" id="dash-hint"></p>
+          </div>
+        </div>
+      </section>
+
+      <section
+        class="dashboard-main connected-accounts-panel settings-panel--hidden"
+        id="view-connected-accounts"
+        aria-label="Connected bank accounts"
+        aria-hidden="true"
+      >
+        <div class="dashboard-surface dashboard-surface--connected">
+          <div class="settings-inner settings-inner--connected">
+            <div class="settings-hero">
+              <h1 class="dash-title">Connected accounts</h1>
+            </div>
+            <div id="connected-accounts-list" class="settings-linked-list" role="list"></div>
+            <p class="settings-msg" id="connected-accounts-msg" role="status"></p>
+          </div>
+        </div>
+      </section>
+
+      <section
+        class="dashboard-main settings-panel settings-panel--hidden"
+        id="view-settings"
+        aria-label="Settings"
+        aria-hidden="true"
+      >
+        <div class="dashboard-surface dashboard-surface--settings">
+        <div class="settings-inner">
+          <div class="settings-hero">
+            <h1 class="dash-title">Settings</h1>
+            <p class="dash-subtitle">Profile and sign-in</p>
+          </div>
+
+          <article class="dash-card settings-card">
+            <h2 class="dash-card-title">Profile</h2>
+            <p class="settings-lead" id="settings-profile-lead">Loading…</p>
+            <div class="settings-field">
+              <label class="auth-gate-label" for="settings-email">Email</label>
+              <input id="settings-email" class="auth-gate-input" type="email" autocomplete="email" readonly />
+            </div>
+            <div class="settings-field">
+              <label class="auth-gate-label" for="settings-display-name">Display name</label>
+              <input id="settings-display-name" class="auth-gate-input" type="text" autocomplete="name" maxlength="120" placeholder="Your name" />
+            </div>
+            <button type="button" class="auth-gate-submit" id="settings-save-profile">Save profile</button>
+            <p class="settings-msg" id="settings-profile-msg" role="status"></p>
+          </article>
+
+          <article class="dash-card settings-card">
+            <h2 class="dash-card-title">Auth management</h2>
+            <p class="settings-hint">Update your password while signed in, sign out on this device, or get a reset link by email.</p>
+            <div class="settings-field">
+              <label class="auth-gate-label" for="settings-new-password">New password</label>
+              <input id="settings-new-password" class="auth-gate-input" type="password" autocomplete="new-password" />
+            </div>
+            <div class="settings-field">
+              <label class="auth-gate-label" for="settings-confirm-password">Confirm new password</label>
+              <input id="settings-confirm-password" class="auth-gate-input" type="password" autocomplete="new-password" />
+            </div>
+            <button type="button" class="auth-gate-submit" id="settings-change-password">Update password</button>
+            <div class="settings-auth-actions settings-auth-actions--row">
+              <button type="button" class="auth-gate-submit auth-gate-submit--secondary" id="settings-reset-email-btn">
+                Email password reset link
+              </button>
+            </div>
+            <button type="button" class="auth-btn auth-btn--ghost settings-signout-block" id="settings-signout-btn">Sign out</button>
+            <p class="settings-msg" id="settings-auth-msg" role="status"></p>
+          </article>
+        </div>
+        </div>
+      </section>
+        </div>
+      </div>
+
+      <aside class="shell-chat-rail" aria-label="Assistant chat">
+        <div class="chat-workspace">
+          <div class="chat-column" id="chat-column">
+            <div class="chat-resize-handle" id="chat-resize-handle" aria-label="Resize chat panel"></div>
+            <div class="chat-messages" id="chat-messages">
+              <div class="chat-message chat-message-assistant">
+                <div class="chat-message-bubble">
+                  <p>Hi. I’m your Financial Engine assistant. Ask about your accounts, spending, or cash flow and I’ll help using your linked data.</p>
+                </div>
+              </div>
+            </div>
+            <div class="chat-input-wrapper">
+              <textarea
+                id="chat-input"
+                class="chat-input"
+                placeholder="Ask anything..."
+                rows="1"
+              ></textarea>
+              <div class="chat-input-actions">
+                <div class="chat-mode-dropdown-wrap">
+                  <button type="button" id="chat-extra-btn" class="chat-extra-button" aria-label="Chat mode" aria-haspopup="true" aria-expanded="false">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M15 18l-6-6 6-6"/>
+                    </svg>
+                  </button>
+                  <div class="chat-mode-dropdown" id="chat-mode-dropdown" role="menu">
+                    <button type="button" class="chat-mode-dropdown-item" data-action="connect-bank" role="menuitem">Connect bank account</button>
+                  </div>
+                </div>
+                <button id="chat-send" class="send-button" aria-label="Send message">
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M5 12l14-7-4 7 4 7z"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+    <!-- Kept for auth-ui.js / settings sign-out (header control removed). -->
+    <button type="button" id="auth-signout-btn" hidden>Sign out</button>
+  </div>
+
+  <script src="../auth/auth-session.js"></script>
+  <script src="../auth/auth-ui.js"></script>
+  <script src="../plaid/plaid.js"></script>
+  <script src="../settings/settings-ui.js"></script>
+  <script src="dashboard.js"></script>
+  <script src="../chat/chatbox.js"></script>
+  <script src="../shared/refresh.js"></script>
+  <script src="../shared/nav-drawer.js"></script>
+</body>
+</html>
+

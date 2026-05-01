@@ -15,46 +15,60 @@ A backend engine that securely ingests financial data from multiple institutions
 
 ## Project Structure
 ```
-Automated_Financial_Intelligence_Engine/
+FinancialProject/
+├─ .env.example
 ├─ .gitignore
 ├─ LICENSE
 ├─ README.md
 ├─ requirements.txt
 ├─ db_architecture/
-│  └─ schema_v1.sql
+│  ├─ schema_v1.sql
+│  ├─ schema_v2.sql
+│  ├─ schema_financialengine_supabase.sql
+│  └─ migration_v2_user_cursor_removed.sql
 ├─ documentation/
-│  └─ plaid-python-master.zip
+│  └─ DEPLOY.md
 ├─ src/
 │  ├─ Backend/
+│  │  ├─ main.py
+│  │  ├─ deps.py
+│  │  ├─ auth_supabase.py
+│  │  ├─ gunicorn_start.sh
 │  │  ├─ Accounts.py
 │  │  ├─ CheckingAccounts.py
 │  │  ├─ CreditCards.py
 │  │  ├─ DataAutomation.py
-│  │  ├─ Endpoints.py
 │  │  ├─ PlaidConnector.py
-│  │  ├─ main.py
+│  │  ├─ api/
+│  │  │  ├─ __init__.py
+│  │  │  ├─ Endpoints.py
+│  │  │  ├─ dashboard_route.py
+│  │  │  └─ linked_accounts_route.py
+│  │  ├─ services/
+│  │  │  ├─ __init__.py
+│  │  │  └─ finance_context.py
 │  │  ├─ Analytics/
-│  │  │  ├─ AnomalyDetector.py
-│  │  │  ├─ PredictiveAnalytics.py
-│  │  │  ├─ StatisticalAnalytics.py
-│  │  │  └─ __init__.py
 │  │  ├─ LLM/
-│  │  │  ├─ client.py
-│  │  │  ├─ prompts.py
-│  │  │  └─ __init__.py
-│  │  ├─ database/
-│  │  │  ├─ Connection.py
-│  │  │  └─ __init__.py
-│  │  └─ __pycache__/
+│  │  └─ database/
 │  └─ Frontend/
-│     ├─ chatbox.js
-│     ├─ dashboard.css
-│     ├─ dashboard.html
 │     ├─ index.html
-│     ├─ nav-drawer.js
-│     ├─ plaid.js
-│     └─ refresh.js
-└─ tests/
+│     ├─ auth/
+│     │  ├─ auth-session.js
+│     │  └─ auth-ui.js
+│     ├─ dashboard/
+│     │  ├─ dashboard.html
+│     │  ├─ dashboard.js
+│     │  └─ dashboard.css
+│     ├─ plaid/
+│     │  └─ plaid.js
+│     ├─ chat/
+│     │  └─ chatbox.js
+│     ├─ settings/
+│     │  └─ settings-ui.js
+│     ├─ shared/
+│     │  ├─ nav-drawer.js
+│     │  └─ refresh.js
+└─ tests/   (optional)
 ```
 
 
@@ -106,8 +120,10 @@ From the repo root:
 cd src/Backend
 python3 main.py
 ```
-Backend runs at:
-- `http://127.0.0.1:5000`
+Backend runs at (default `PORT=8001` in `main.py`; set `PORT`/`HOST` in `.env` to override; avoid `5000` on macOS due to AirPlay):
+- `http://127.0.0.1:8001`
+
+Production (Gunicorn + Uvicorn workers): see `documentation/DEPLOY.md` and run `chmod +x src/Backend/gunicorn_start.sh && ./src/Backend/gunicorn_start.sh`.
 
 
 ### 3. Run frontend
@@ -118,7 +134,8 @@ python3 -m http.server 8000
 ```
 
 Open:
-- `http://127.0.0.1:8000`
+- Plaid demo page: `http://127.0.0.1:8000/`
+- Dashboard UI: `http://127.0.0.1:8000/dashboard/dashboard.html`
 
 
 ### 4. What to Expect

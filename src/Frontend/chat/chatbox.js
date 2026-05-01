@@ -1,6 +1,6 @@
 /**
  * Chat UI: dropdown (Connect bank), send message, textarea behavior, panel resize.
- * Uses window.openPlaidLink from plaid.js.
+ * Uses window.openPlaidLink from plaid/plaid.js.
  */
 (function () {
   function initChatModeDropdown() {
@@ -59,12 +59,81 @@
   }
 
 
+  function appendStreamingAssistant() {
+    var wrap = document.createElement("div");
+    wrap.className = "chat-message chat-message-assistant";
+    var bubble = document.createElement("div");
+    bubble.className = "chat-message-bubble";
+    var p = document.createElement("p");
+    p.textContent = "";
+    bubble.appendChild(p);
+    wrap.appendChild(bubble);
+    chatMessages.appendChild(wrap);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    return p;
+  }
+
   function sendMessage() {
     var text = (chatInput.value || "").trim();
     if (!text) return;
     chatInput.value = "";
     appendMessage("user", text);
-    appendMessage("assistant", "Reply from the assistant will go here. Connect a backend chat endpoint to respond.");
+    var base = window.API_BASE || "http://127.0.0.1:8001";
+    var outP = appendStreamingAssistant();
+
+    (window.serverFetch || fetch)(base + "/chat/stream", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: text }),
+    })
+      .then(function (res) {
+        if (!res.ok) {
+          return res.json().then(function (data) {
+            throw new Error(data.detail || data.message || "HTTP " + res.status);
+          });
+        }
+        if (!res.body || !res.body.getReader) {
+          throw new Error("Streaming not supported in this browser");
+        }
+        var reader = res.body.getReader();
+        var dec = new TextDecoder();
+        var buf = "";
+
+        function pump() {
+          return reader.read().then(function (chunk) {
+            if (chunk.done) return;
+            buf += dec.decode(chunk.value, { stream: true });
+            var sep;
+            while ((sep = buf.indexOf("\n\n")) !== -1) {
+              var block = buf.slice(0, sep);
+              buf = buf.slice(sep + 2);
+              block.split("\n").forEach(function (line) {
+                if (line.indexOf("data: ") !== 0) return;
+                var raw = line.slice(6).trim();
+                if (!raw || raw === "[DONE]") return;
+                var ev;
+                try {
+                  ev = JSON.parse(raw);
+                } catch (e) {
+                  return;
+                }
+                if (ev.type === "delta" && ev.content) {
+                  outP.textContent += ev.content;
+                  chatMessages.scrollTop = chatMessages.scrollHeight;
+                }
+                if (ev.type === "error") {
+                  outP.textContent = "Sorry, something went wrong: " + (ev.message || "error");
+                }
+              });
+            }
+            return pump();
+          });
+        }
+        return pump();
+      })
+      .catch(function (err) {
+        outP.textContent = "Sorry, something went wrong: " + (err.message || String(err));
+      });
   }
 
   if (chatSend) chatSend.addEventListener("click", sendMessage);
@@ -86,19 +155,23 @@
     var column = document.getElementById("chat-column");
     var handle = document.getElementById("chat-resize-handle");
     if (!column || !handle) return;
-    var minW = 320;
+    var rail = column.closest(".shell-chat-rail");
+    var minW = 260;
     var maxW = 720;
     var startX = 0;
     var startW = 0;
 
-
     function onMouseMove(e) {
       var dx = startX - e.clientX;
       var newW = Math.min(maxW, Math.max(minW, startW + dx));
-      column.style.width = newW + "px";
+      if (rail) {
+        rail.style.width = newW + "px";
+        rail.style.maxWidth = "none";
+      } else {
+        column.style.width = newW + "px";
+      }
     }
-    
-    
+
     function onMouseUp() {
       document.removeEventListener("mousemove", onMouseMove);
       document.removeEventListener("mouseup", onMouseUp);
@@ -108,7 +181,7 @@
     handle.addEventListener("mousedown", function (e) {
       e.preventDefault();
       startX = e.clientX;
-      startW = column.offsetWidth;
+      startW = rail ? rail.offsetWidth : column.offsetWidth;
       document.addEventListener("mousemove", onMouseMove);
       document.addEventListener("mouseup", onMouseUp);
       document.body.style.cursor = "col-resize";

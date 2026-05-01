@@ -1,8 +1,12 @@
 python-dotenv==1.0.0
 plaid-python==37.1.0
 numpy==2.3.4
-pandas==2.3.3
 fastapi==0.121.3
-python-multipart==0.0.9 #for fastAPI 
+python-multipart==0.0.9
 uvicorn==0.38.0
+gunicorn==23.0.0
+# Provides the `psycopg2` module; do not also install the `psycopg2` package on top of this.
 psycopg2-binary==2.9.9
+openai==2.32.0
+PyJWT==2.10.1
+cryptography==46.0.3

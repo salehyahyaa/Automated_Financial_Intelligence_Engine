@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>Plaid Link</title>
+  <meta name="api-base" content="http://127.0.0.1:8001" />
   <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
 </head>
 
@@ -11,8 +12,9 @@
   <button id="link-button">Connect Bank Account</button>
 
   <script>
+    var API_BASE = (document.querySelector('meta[name="api-base"]') || {}).content || "http://127.0.0.1:8001";
     // Step 1: Fetch link_token from backend
-    fetch("http://127.0.0.1:5000/create_link_token")
+    fetch(API_BASE + "/create_link_token")
       .then(res => {
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         return res.json();
@@ -26,7 +28,7 @@
             console.log("Public Token:", public_token);
 
             // Step 3: Send token to backend
-            fetch("http://127.0.0.1:5000/exchange_public_token", {
+            fetch(API_BASE + "/exchange_public_token", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ public_token: public_token })
@@ -39,9 +41,9 @@
               console.log(result);
               
               // Sync accounts and transactions into the DB (uses latest linked item)
-              return fetch("http://127.0.0.1:5000/sync_checking_accounts", { method: "POST" })
-                .then(() => fetch("http://127.0.0.1:5000/sync_credit_accounts", { method: "POST" }))
-                .then(() => fetch("http://127.0.0.1:5000/sync-transactions", {
+              return fetch(API_BASE + "/sync_checking_accounts", { method: "POST" })
+                .then(() => fetch(API_BASE + "/sync_credit_accounts", { method: "POST" }))
+                .then(() => fetch(API_BASE + "/sync-transactions", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: "{}"
@@ -74,7 +76,7 @@
       })
       .catch(error => {
         console.error("Error fetching link token:", error);
-        alert("Failed to connect to backend. Make sure server is running on port 5000.");
+        alert("Failed to connect to backend. Match api-base meta to backend HOST:PORT (default 8001).");
       });
   </script>
 </body>
