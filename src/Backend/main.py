@@ -28,6 +28,8 @@ logging.getLogger(__name__).info("Logging to %s (and stderr).", _log_path)
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 
 from api.Endpoints import router
 from auth_supabase import auth_verification_enabled
@@ -86,6 +88,17 @@ def supabase_public_config():
 def health():
     """Quick check that this process is the Financial Engine API."""
     return {"ok": True, "service": "financial-engine-api"}
+
+
+@app.get("/")
+def root():
+    """Dashboard + static UI live under /app/ (same host/port as the API for simple EC2 deploy)."""
+    return RedirectResponse(url="/app/dashboard/dashboard.html", status_code=307)
+
+
+_FRONTEND_DIR = os.path.join(_ROOT, "src", "Frontend")
+if os.path.isdir(_FRONTEND_DIR):
+    app.mount("/app", StaticFiles(directory=_FRONTEND_DIR, html=False), name="app_frontend")
 
 
 if __name__ == "__main__":

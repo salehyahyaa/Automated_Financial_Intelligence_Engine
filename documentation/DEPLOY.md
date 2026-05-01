@@ -37,4 +37,6 @@ Uses **`HOST`** / **`PORT`** from `.env` (defaults `127.0.0.1:8001`).
 
 ## Frontend API URL
 
-Set `<meta name="api-base" content="https://api.yourdomain.com" />` in `dashboard/dashboard.html` / `index.html`, or set `window.API_BASE` before loading `plaid/plaid.js`.
+The API serves static files at **`/app/`** (repo `src/Frontend`). Open **`http://<host>:<PORT>/`** (redirects to the dashboard) or **`http://<host>:<PORT>/app/dashboard/dashboard.html`**. When the path starts with `/app/`, the dashboard script sets **`api-base`** to **`location.origin`** so the browser talks to the same server.
+
+For a separate static host (e.g. S3), set `<meta name="api-base" content="https://api.yourdomain.com" />` in `dashboard/dashboard.html` / `index.html`, and set **`CORS_ALLOW_ORIGINS`** to that static origin.

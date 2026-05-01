@@ -5,6 +5,16 @@
   <meta charset="UTF-8" />
   <title>Financial Engine – Dashboard</title>
   <meta name="api-base" content="http://127.0.0.1:8001" />
+  <script>
+    /* When this page is served from the API at /app/... (see main.py StaticFiles), use same origin for API calls. */
+    (function () {
+      var p = location.pathname || "";
+      if (p.indexOf("/app/") === 0 && location.origin && /^https?:$/i.test(location.protocol)) {
+        var m = document.querySelector('meta[name="api-base"]');
+        if (m) m.setAttribute("content", location.origin);
+      }
+    })();
+  </script>
   <!-- Supabase URL + anon: leave empty and set SUPABASE_URL + SUPABASE_ANON_KEY in API .env (GET /config/supabase-public). Or fill metas instead. JWT: SUPABASE_JWT_SECRET in .env. -->
   <meta name="supabase-url" content="" />
   <meta name="supabase-anon-key" content="" />
